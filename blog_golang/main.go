@@ -6,9 +6,8 @@ import (
 
 func main() {
 	r := routes.SetupRoutes()
-	r.Run()
+	r.Run(":9999")
 
-	
 	// 起初测试创建Gin引擎
 	// r := gin.Default()
 

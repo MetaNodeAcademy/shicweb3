@@ -12,7 +12,7 @@ type AuthController struct{}
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=20"`
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min6"`
+	Password string `json:"password" binding:"required,min=6"`
 }
 
 type LoginRequest struct {
@@ -44,10 +44,11 @@ func (ac *AuthController) Register(c *gin.Context) {
 		Email:    req.Email,
 		Password: req.Password,
 	}
+
 	// 存储到数据库
 
 	// 生成JWT token
-	token := ""
+	token := "1234567890abcdef"
 
 	utils.Success(c, AuthResponse{
 		Token: token,
