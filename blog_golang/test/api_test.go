@@ -32,6 +32,24 @@ func TestPostRegister(t *testing.T) {
 	Post(path, register)
 }
 
+// go test ./test/ -run TestPostLogin -v
+func TestPostLogin(t *testing.T) {
+	path := "/api/v1/auth/login"
+	// 1. 创建结构体实例
+	login := controllers.LoginRequest{
+		Username: "testuser1",
+		Password: "password123",
+	}
+
+	Post(path, login)
+}
+
+// go test ./test/ -run TestPostProfile -v
+func TestPostProfile(t *testing.T) {
+	path := "/api/v1/profile"
+	Post1(path)
+}
+
 func Get(path string) {
 	// 1. 定义API地址
 	url := HOST + path
@@ -56,20 +74,13 @@ func Get(path string) {
 	fmt.Println("API地址:", url)
 }
 
-func Post(path string, js interface{}) {
-
-	// 2. 将结构体编码为JSON格式的字节切片 ([]byte)
-	jsonData, err := json.Marshal(js)
-	if err != nil {
-		log.Fatalf("JSON编码失败: %v", err)
-	}
-	fmt.Println(jsonData)
+func Post1(path string) {
 	// 3. 定义API地址
 	url := HOST + path
 
 	// 4. 发送POST请求
-	//   参数: URL, Content-Type, 请求体(需要包装为io.Reader)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	// 参数: URL, Content-Type, 请求体(需要包装为io.Reader)
+	resp, err := http.Post(url, "application/json", nil)
 	if err != nil {
 		log.Fatalf("POST请求失败: %v", err)
 	}
@@ -88,31 +99,24 @@ func Post(path string, js interface{}) {
 	fmt.Println("API地址:", url)
 }
 
-func Post2(path string) {
-	// 1. 创建结构体实例
-	register := controllers.RegisterRequest{
-		Username: "testuser1",
-		Email:    "testuser1@example.com",
-		Password: "password123",
-	}
-
-	// 2. 序列化为 JSON
-	jsonData, _ := json.Marshal(register)
-
-	// 3. 发送请求
-	resp, err := http.Post(HOST+path, "application/json", bytes.NewBuffer(jsonData))
-
+func Post(path string, js interface{}) {
+	// 2. 将结构体编码为JSON格式的字节切片 ([]byte)
+	jsonData, err := json.Marshal(js)
 	if err != nil {
-		fmt.Println("请求失败:", err)
-		return
+		log.Fatalf("JSON编码失败: %v", err)
 	}
-	defer resp.Body.Close()
 
-	// 4. 读取响应
-	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-	fmt.Printf("状态码: %d\n", resp.StatusCode)
-	fmt.Printf("响应: %v\n", result)
+	// 3. 定义API地址
+	url := HOST + path
+
+	// 4. 发送POST请求
+	// 参数: URL, Content-Type, 请求体(需要包装为io.Reader)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Fatalf("POST请求失败: %v", err)
+	}
+	// 重要: 函数执行完毕后关闭响应体，防止资源泄漏
+	defer resp.Body.Close()
 
 	// 5. 读取服务器返回的响应体
 	body, err := ioutil.ReadAll(resp.Body)
@@ -123,5 +127,5 @@ func Post2(path string) {
 	// 6. 打印结果
 	fmt.Println("响应状态码:", resp.StatusCode)
 	fmt.Println("响应内容:", string(body))
-	fmt.Println("API地址:", HOST+path)
+	fmt.Println("API地址:", url)
 }

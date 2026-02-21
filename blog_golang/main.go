@@ -1,10 +1,14 @@
 package main
 
 import (
+	"blog/config"
 	"blog/routes"
 )
 
 func main() {
+	// 打开数据库连接
+	config.OpenDB()
+
 	r := routes.SetupRoutes()
 	r.Run(":9999")
 

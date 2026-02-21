@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"blog/config"
 	"blog/models"
 	"blog/utils"
 
@@ -34,9 +35,18 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
+	db := config.GetDBConect()
 	// 用户名是否存在
-
+	var existingUser models.User
+	if err := db.Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
+		utils.BadRequest(c, "用户名已存在")
+		return
+	}
 	// 邮箱是否存在
+	if err := db.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+		utils.BadRequest(c, "邮箱已被注册")
+		return
+	}
 
 	// 创建用户
 	user := models.User{
@@ -45,10 +55,17 @@ func (ac *AuthController) Register(c *gin.Context) {
 		Password: req.Password,
 	}
 
-	// 存储到数据库
+	if err := db.Create(&user).Error; err != nil {
+		utils.InternalServerError(c, "注册失败")
+		return
+	}
 
 	// 生成JWT token
-	token := "1234567890abcdef"
+	token, err := utils.GenToken(user.ID, user.Username)
+	if err != nil {
+		utils.InternalServerError(c, "生成token失败")
+		return
+	}
 
 	utils.Success(c, AuthResponse{
 		Token: token,
@@ -58,16 +75,55 @@ func (ac *AuthController) Register(c *gin.Context) {
 
 // 用户登录
 func (ac *AuthController) Login(c *gin.Context) {
-	// TODO
+	var req LoginRequest
+	if err := c.ShouldBind(&req); err != nil {
+		utils.BadRequest(c, err.Error())
+		return
+	}
+
+	db := config.GetDBConect()
+	// 查找用户
+	var user models.User
+	if err := db.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		utils.Unauthorized(c, "用户名或密码错误")
+		return
+	}
+
+	// 验证密码
+	// if !user.CheckPassword(user.Password, req.Password) {
+	// 	utils.Unauthorized(c, "用户名或密码错误")
+	// 	return
+	// }
+
+	// 生成JWT token
+	token, err := utils.GenToken(user.ID, user.Username)
+	if err != nil {
+		utils.InternalServerError(c, "生成token失败")
+		return
+	}
+
 	utils.Success(c, AuthResponse{
-		Token: "",
-		User:  models.User{},
+		Token: token,
+		User:  user,
 	})
 }
 
 // 用户信息
 func (ac *AuthController) GetProfile(c *gin.Context) {
-	// TODO
-	// 这里需要实现从JWT token中解析用户信息的逻辑，暂时返回一个空的用户对象
-	utils.Success(c, models.User{})
+	// 中间件中设置了"user_id"键，获取用户ID
+	userID, exists := c.Get("user_id")
+
+	if !exists {
+		utils.Unauthorized(c, "未授权")
+		return
+	}
+
+	var user models.User
+	db := config.GetDBConect()
+	if err := db.First(&user, userID).Error; err != nil {
+		utils.NotFound(c, "用户不存在")
+		return
+	}
+
+	utils.Success(c, user)
 }

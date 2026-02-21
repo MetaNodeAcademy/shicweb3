@@ -5,6 +5,7 @@ import (
 	// "golang_learning_blog/utils"
 
 	"blog/controllers"
+	"blog/middleware"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,10 @@ func Health(c *gin.Context) {
 
 func SetupRoutes() *gin.Engine {
 	r := gin.Default()
+	// 1. 全局中间件
+	r.Use(middleware.LoggerMiddleware())
+	r.Use(middleware.ErrorHandlingMiddleware())
+	r.Use(gin.Recovery())
 
 	// 创建控制器实例
 	authController := &controllers.AuthController{}
@@ -37,37 +42,37 @@ func SetupRoutes() *gin.Engine {
 			// /api/v1/auth/register
 			auth.POST("/register", authController.Register)
 			// /api/v1/auth/login
-			//	auth.POST("/login", Health)
+			auth.POST("/login", authController.Login)
 		}
 
 		// 2、认证路由：用户信息、文章、评论
-		//authed := api.Group("")
+		authed := api.Group("")
 		// +认证
+		authed.Use(middleware.AuthMiddleWare())
+		{
+			// 用户信息
+			// /api/v1/profile
+			authed.POST("/profile", authController.GetProfile)
 
-		//{
-		// 用户信息
-		// /api/v1/profile
-		//	authed.GET("/profile", Health)
+			//  文章
+			posts := authed.Group("/posts")
+			{
+				// /api/v1/posts
+				posts.POST("", Health)
+				// /api/v1/posts/:id
+				posts.PUT("/:id", Health)
+				// /api/v1/posts/:id
+				posts.DELETE("/:id", Health)
 
-		// 文章
-		//	posts := authed.Group("/posts")
-		//	{
-		// /api/v1/posts
-		//		posts.POST("", Health)
-		// /api/v1/posts/:id
-		//		posts.PUT("/:id", Health)
-		// /api/v1/posts/:id
-		//		posts.DELETE("/:id", Health)
+			}
 
-		//	}
-
-		// 评论
-		// /api/v1/posts/:post_id/comments
-		//	comments := authed.Group("/posts/:post_id/comments")
-		//	{
-		//		comments.POST("", Health)
-		//	}
-		//}
+			// 评论
+			// /api/v1/posts/:post_id/comments
+			//	comments := authed.Group("/posts/:post_id/comments")
+			//	{
+			//		comments.POST("", Health)
+			//	}
+		}
 
 		// 3、不需要认证路由：文章
 		//public := api.Group("")

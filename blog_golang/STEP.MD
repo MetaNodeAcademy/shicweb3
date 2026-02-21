@@ -77,3 +77,6 @@ controllers/
 vim auth.go
 vim post.go
 vim comment.go
+
+# 编写中间件middleware
+middleware/auth.go <= routes.go
